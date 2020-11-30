@@ -1,0 +1,18 @@
+﻿@page
+@model IndexModel
+@{
+    ViewData["Title"] = "Home";
+}
+
+<div id="app" class="text-center container p-3">
+    <div class="row">
+        <div v-if="devices" v-for="device in devices" class="col-lg-4">
+            <img v-if="device.imgSrc" :src="device.imgSrc" class="img-fluid mb-3">
+        </div>
+    </div>
+</div>
+
+@section Scripts 
+{
+    <script src="~/js/index.js" asp-append-version="true"></script>
+}

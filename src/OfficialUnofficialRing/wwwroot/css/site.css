@@ -1,0 +1,16 @@
+﻿body {
+    background-color: black;
+}
+
+#app {
+    margin: 0;
+    padding: 0;
+    width: auto;
+    max-width: 100%;
+}
+
+img {
+    border-width: 3px;
+    border-color: darkorange;
+    border-style: solid;
+}

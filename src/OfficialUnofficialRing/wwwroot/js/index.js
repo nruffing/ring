@@ -15,7 +15,7 @@
                     this.deviceIds = [];
                     this.devices.forEach(device => this.deviceIds.push(device.id))
                     self.refreshSnapshots();
-                    setInterval(self.refreshSnapshots, 10000);
+                    setInterval(self.refreshSnapshots, 20000);
                 });
         },
         methods: {

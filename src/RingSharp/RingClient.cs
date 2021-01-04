@@ -7,6 +7,7 @@
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Net;
     using System.Threading.Tasks;
     using Validation;
 
@@ -19,15 +20,50 @@
         private IRestClient _authClient;
         private IRestClient _client;
 
-        public RingClient(string refreshToken)
+        public RingClient()
         {
-            Requires.NotNullOrWhiteSpace(refreshToken, nameof(refreshToken));
-
-            this._refreshToken = refreshToken;
             this._authClient = new RestClient(RingOAuthUrl);
             this._authClient.UseNewtonsoftJson();
             this._client = new RestClient(RingBaseUrl);
             this._client.UseNewtonsoftJson();
+        }
+
+        public RingClient(string refreshToken)
+            : this()
+        {
+            Requires.NotNullOrWhiteSpace(refreshToken, nameof(refreshToken));
+            this._refreshToken = refreshToken;
+        }
+
+        public async Task<string> AuthenticateAsync(string username, string password, string twoFactorCode = null)
+        {
+            Requires.NotNullOrWhiteSpace(username, nameof(username));
+            Requires.NotNullOrWhiteSpace(password, nameof(password));
+
+            var request = new RestRequest(Method.POST);
+            request.AddParameter("grant_type", "password", ParameterType.GetOrPost);
+            request.AddParameter("username", username, ParameterType.GetOrPost);
+            request.AddParameter("password", password, ParameterType.GetOrPost);
+            request.AddParameter("client_id", "RingWindows", ParameterType.GetOrPost);
+            request.AddParameter("scope", "client", ParameterType.GetOrPost);
+
+            if (!string.IsNullOrWhiteSpace(twoFactorCode))
+            {
+                request.AddHeader("2fa-support", "true");
+                request.AddHeader("2fa-code", twoFactorCode);
+            }
+
+            var response = await this._authClient.ExecuteAsync<OAuthResponse>(request).ConfigureAwait(false);
+            /* 
+             * The status code will be PreconditionFailed when the two factor code is not sent. This will trigger
+             * the 2fa process to start.
+             */
+            if (!response?.IsSuccessful ?? false && response?.StatusCode != HttpStatusCode.PreconditionFailed)
+            {
+                throw new Exception($"Failed to authenticate. Response code: {response.StatusDescription}");
+            }
+
+            return response?.Data?.RefreshToken;
         }
 
         public async Task<IEnumerable<Device>> GetAllDevicesAsync()
@@ -144,6 +180,8 @@
 
         private async Task<string> GetNewAccessTokenAsync()
         {
+            Requires.NotNullOrWhiteSpace(this._refreshToken, nameof(this._refreshToken));
+
             var request = new RestRequest(Method.POST);
             request.AddParameter("grant_type", "refresh_token");
             request.AddParameter("refresh_token", this._refreshToken);

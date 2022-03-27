@@ -1,5 +1,6 @@
 ﻿using RingSharp;
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace RingRefreshTokenUtil
@@ -11,6 +12,12 @@ namespace RingRefreshTokenUtil
             string username = null;
             string password = null;
             string twoFactorCode = null;
+
+            if (args is null || !args.Any())
+            {
+                var rawInput = Console.ReadLine();
+                args = rawInput.Split(' ');
+            }
 
             bool valid = args != null && args.Length >= 2;
             if (valid)

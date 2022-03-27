@@ -17,26 +17,26 @@ namespace RingService
                 .WriteTo.File("logs/log.json")
                 .CreateLogger();
 
-            try
+            var refreshToken = ConfigurationManager.AppSettings?["RingRefreshToken"];
+            Requires.NotNullOrWhiteSpace(refreshToken, nameof(refreshToken));
+
+            var client = new RingClient(refreshToken);
+
+            var devices = await client.GetAllDevicesAsync().ConfigureAwait(false);
+            var deviceIds = devices.Select(d => d.Id).ToArray();
+
+            while (true)
             {
-                var refreshToken = ConfigurationManager.AppSettings?["RingRefreshToken"];
-                Requires.NotNullOrWhiteSpace(refreshToken, nameof(refreshToken));
-
-                var client = new RingClient(refreshToken);
-
-                var devices = await client.GetAllDevicesAsync().ConfigureAwait(false);
-                var deviceIds = devices.Select(d => d.Id).ToArray();
-
-                while (true)
+                try
                 {
                     await client.UpdateSnapshotAsync(deviceIds).ConfigureAwait(false);
                     await Task.Delay(20000).ConfigureAwait(false);
                     Console.WriteLine($"HEARTBEAT: {DateTime.Now}");
                 }
-            }
-            catch (Exception e)
-            {
-                log.Error(e, "There was an error updating snapshots.");
+                catch (Exception e)
+                {
+                    log.Error(e, "There was an error updating snapshots.");
+                }
             }
         }
     }
